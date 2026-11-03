@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DriftLens Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 antialiased p-6 font-sans">
+  <div class="max-w-5xl mx-auto bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl space-y-6">
+    <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg border border-blue-500/30">
+          DL
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">DriftLens Dashboard</h1>
+          <p class="text-xs text-slate-400">Semantic Drift & Co-Occurrence Network Exploration</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          ● API Connected
+        </span>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="p-3.5 rounded-xl border border-slate-700 bg-slate-900/50">
+        <div class="text-xs text-slate-400">Total Nodes</div>
+        <div id="statNodes" class="text-lg font-bold text-slate-100 mt-0.5">...</div>
+      </div>
+      <div class="p-3.5 rounded-xl border border-slate-700 bg-slate-900/50">
+        <div class="text-xs text-slate-400">Total Edges</div>
+        <div id="statEdges" class="text-lg font-bold text-blue-400 mt-0.5">...</div>
+      </div>
+      <div class="p-3.5 rounded-xl border border-slate-700 bg-slate-900/50">
+        <div class="text-xs text-slate-400">Network Density</div>
+        <div id="statDensity" class="text-lg font-bold text-emerald-400 mt-0.5">...</div>
+      </div>
+      <div class="p-3.5 rounded-xl border border-slate-700 bg-slate-900/50">
+        <div class="text-xs text-slate-400">Modularity</div>
+        <div id="statModularity" class="text-lg font-bold text-indigo-400 mt-0.5">...</div>
+      </div>
+    </div>
+
+    <!-- Tab Buttons -->
+    <div class="flex items-center gap-2 border-b border-slate-700 pb-2 text-sm">
+      <button id="btnNet" onclick="setTab('net')" class="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white transition">Network Graph</button>
+      <button id="btnDrift" onclick="setTab('drift')" class="px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition">Semantic Drift</button>
+    </div>
+
+    <!-- Network Tab -->
+    <div id="tabNet" class="space-y-4">
+      <div class="relative w-full h-[450px] border border-slate-700 rounded-xl overflow-hidden bg-slate-950">
+        <canvas id="graphCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+      </div>
+    </div>
+
+    <!-- Drift Tab -->
+    <div id="tabDrift" class="space-y-4 hidden">
+      <div class="flex items-center gap-3">
+        <label class="text-xs text-slate-400 font-semibold">Inspect Term:</label>
+        <input id="termInput" value="climate" class="text-xs bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white" />
+        <button onclick="fetchDrift()" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs text-white">Load Drift</button>
+      </div>
+      <div id="driftOutput" class="border border-slate-700 rounded-xl p-4 bg-slate-950 font-mono text-xs">
+        Loading drift...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setTab(tab) {
+      document.getElementById('tabNet').classList.toggle('hidden', tab !== 'net');
+      document.getElementById('tabDrift').classList.toggle('hidden', tab !== 'drift');
+      document.getElementById('btnNet').className = tab === 'net' ? 'px-4 py-2 rounded-lg font-medium bg-blue-600 text-white' : 'px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white';
+      document.getElementById('btnDrift').className = tab === 'drift' ? 'px-4 py-2 rounded-lg font-medium bg-blue-600 text-white' : 'px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white';
+    }
+
+    async function loadNetwork() {
+      try {
+        const res = await fetch('/api/network');
+        const data = await res.json();
+        document.getElementById('statNodes').innerText = data.metrics.num_nodes;
+        document.getElementById('statEdges').innerText = data.metrics.num_edges;
+        document.getElementById('statDensity').innerText = data.metrics.density.toFixed(3);
+        document.getElementById('statModularity').innerText = data.metrics.modularity.toFixed(3);
+        renderGraph(data);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function fetchDrift() {
+      const term = document.getElementById('termInput').value.trim();
+      const out = document.getElementById('driftOutput');
+      out.innerText = 'Fetching drift for ' + term + '...';
+      try {
+        const res = await fetch('/api/drift?term=' + encodeURIComponent(term));
+        if (!res.ok) {
+          out.innerText = 'No centroids found for term: ' + term;
+          return;
+        }
+        const data = await res.json();
+        out.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+      } catch (e) {
+        out.innerText = 'Error: ' + e.message;
+      }
+    }
+
+    function renderGraph(data) {
+      const canvas = document.getElementById('graphCanvas');
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      const w = rect.width;
+      const h = rect.height;
+
+      const nodes = data.nodes.map((n, i) => {
+        const angle = (i / data.nodes.length) * 2 * Math.PI;
+        return { ...n, x: w / 2 + Math.cos(angle) * 140, y: h / 2 + Math.sin(angle) * 140, r: 6 + n.frequency * 3 };
+      });
+      const nodeMap = new Map(nodes.map(n => [n.id, n]));
+      const edges = data.edges.map(e => ({ source: nodeMap.get(e.source), target: nodeMap.get(e.target) })).filter(e => e.source && e.target);
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+        edges.forEach(e => {
+          ctx.beginPath();
+          ctx.moveTo(e.source.x, e.source.y);
+          ctx.lineTo(e.target.x, e.target.y);
+          ctx.stroke();
+        });
+        nodes.forEach(n => {
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r, 0, 2 * Math.PI);
+          ctx.fillStyle = '#3b82f6';
+          ctx.fill();
+          ctx.fillStyle = '#e2e8f0';
+          ctx.font = '11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(n.label, n.x, n.y + n.r + 12);
+        });
+      }
+      draw();
+    }
+
+    window.addEventListener('load', () => {
+      loadNetwork();
+      fetchDrift();
+    });
+  </script>
+</body>
+</html>
+

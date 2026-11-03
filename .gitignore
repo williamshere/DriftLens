@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+pip-*/
+pip-build-tracker-*/
+pip-ephem-wheel-cache-*/
+pip-target-*/
+pip-install-*/
+
+# Testing / cache
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# DriftLens data
+example.db
+example.db-*
+*.db
+*.db-journal
+
+# Temp / scratch
+tmp*/
+tmp*.csv
+*.tmp
+
+# Sapling / Hg / Eden (keep Git as source of truth, ignore legacy VCS)
+.hg/
+.sl/
+.eden/
+
+# OS / IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
