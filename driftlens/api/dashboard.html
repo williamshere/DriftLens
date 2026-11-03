@@ -2,157 +2,595 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>DriftLens Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DriftLens — Semantic Drift & Network Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Dark scrollbars & fallback styling */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .canvas-container { position: relative; width: 100%; height: 500px; }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 antialiased p-6 font-sans">
-  <div class="max-w-5xl mx-auto bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl space-y-6">
-    <div class="flex items-center justify-between border-b border-slate-700 pb-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg border border-blue-500/30">
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased p-4 md:p-8 font-sans">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Top Header Banner -->
+    <header class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-blue-500/20">
           DL
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight">DriftLens Dashboard</h1>
-          <p class="text-xs text-slate-400">Semantic Drift & Co-Occurrence Network Exploration</p>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-black tracking-tight text-white">DriftLens Dashboard</h1>
+            <span class="text-xs px-2 py-0.5 rounded-full font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">v0.1.0</span>
+          </div>
+          <p class="text-sm text-slate-400">Semantic Drift Detection & Sociological Discourse Co-Occurrence Explorer</p>
         </div>
       </div>
-      <div class="flex items-center gap-2">
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-          ● API Connected
-        </span>
-      </div>
-    </div>
-
-    <!-- Stats Row -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="p-3.5 rounded-xl border border-slate-700 bg-slate-900/50">
-        <div class="text-xs text-slate-400">Total Nodes</div>
-        <div id="statNodes" class="text-lg font-bold text-slate-100 mt-0.5">...</div>
-      </div>
-      <div class="p-3.5 rounded-xl border border-slate-700 bg-slate-900/50">
-        <div class="text-xs text-slate-400">Total Edges</div>
-        <div id="statEdges" class="text-lg font-bold text-blue-400 mt-0.5">...</div>
-      </div>
-      <div class="p-3.5 rounded-xl border border-slate-700 bg-slate-900/50">
-        <div class="text-xs text-slate-400">Network Density</div>
-        <div id="statDensity" class="text-lg font-bold text-emerald-400 mt-0.5">...</div>
-      </div>
-      <div class="p-3.5 rounded-xl border border-slate-700 bg-slate-900/50">
-        <div class="text-xs text-slate-400">Modularity</div>
-        <div id="statModularity" class="text-lg font-bold text-indigo-400 mt-0.5">...</div>
-      </div>
-    </div>
-
-    <!-- Tab Buttons -->
-    <div class="flex items-center gap-2 border-b border-slate-700 pb-2 text-sm">
-      <button id="btnNet" onclick="setTab('net')" class="px-4 py-2 rounded-lg font-medium bg-blue-600 text-white transition">Network Graph</button>
-      <button id="btnDrift" onclick="setTab('drift')" class="px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white transition">Semantic Drift</button>
-    </div>
-
-    <!-- Network Tab -->
-    <div id="tabNet" class="space-y-4">
-      <div class="relative w-full h-[450px] border border-slate-700 rounded-xl overflow-hidden bg-slate-950">
-        <canvas id="graphCanvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
-      </div>
-    </div>
-
-    <!-- Drift Tab -->
-    <div id="tabDrift" class="space-y-4 hidden">
       <div class="flex items-center gap-3">
-        <label class="text-xs text-slate-400 font-semibold">Inspect Term:</label>
-        <input id="termInput" value="climate" class="text-xs bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-white" />
-        <button onclick="fetchDrift()" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs text-white">Load Drift</button>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>API Connected</span>
+        </div>
+        <a href="/docs" target="_blank" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+          <span>Swagger Docs</span>
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        </a>
       </div>
-      <div id="driftOutput" class="border border-slate-700 rounded-xl p-4 bg-slate-950 font-mono text-xs">
-        Loading drift...
+    </header>
+
+    <!-- Global Corpus Stats Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur">
+        <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Corpus Docs</div>
+        <div id="statDocs" class="text-xl font-bold text-white mt-1">-</div>
+      </div>
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur">
+        <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Embeddings</div>
+        <div id="statEmbeddings" class="text-xl font-bold text-cyan-400 mt-1">-</div>
+      </div>
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur">
+        <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Network Nodes</div>
+        <div id="statNodes" class="text-xl font-bold text-blue-400 mt-1">-</div>
+      </div>
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur">
+        <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Network Edges</div>
+        <div id="statEdges" class="text-xl font-bold text-indigo-400 mt-1">-</div>
+      </div>
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur">
+        <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Density</div>
+        <div id="statDensity" class="text-xl font-bold text-emerald-400 mt-1">-</div>
+      </div>
+      <div class="p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur">
+        <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Modularity</div>
+        <div id="statModularity" class="text-xl font-bold text-violet-400 mt-1">-</div>
       </div>
     </div>
+
+    <!-- Main Navigation Bar -->
+    <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+      <button id="tabBtnNet" onclick="switchTab('net')" class="px-5 py-2.5 rounded-xl font-semibold text-sm transition bg-blue-600 text-white shadow-lg shadow-blue-500/20 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        <span>Co-Occurrence Network</span>
+      </button>
+      <button id="tabBtnDrift" onclick="switchTab('drift')" class="px-5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+        <span>Semantic Drift</span>
+      </button>
+      <button id="tabBtnCorpus" onclick="switchTab('corpus')" class="px-5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+        <span>Corpus Documents</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: NETWORK GRAPH -->
+    <div id="viewNet" class="space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <!-- Controls Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-800">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Slice Filter:</span>
+            <select id="sliceSelect" onchange="loadNetwork()" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+              <option value="">All Time Slices</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-4 text-xs text-slate-400">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Community 0</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Community 1</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Community 2</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-purple-500 inline-block"></span> Community 3+</span>
+          </div>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-container bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+          <canvas id="graphCanvas" class="w-full h-full cursor-crosshair"></canvas>
+          <div id="graphTooltip" class="absolute hidden pointer-events-none bg-slate-900/95 border border-slate-700 text-slate-100 text-xs rounded-xl p-3 shadow-2xl backdrop-blur transition-opacity duration-150 z-10 space-y-1">
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 italic text-center">💡 Hover over any node to view centrality metrics & connected edges. Click a term to explore its semantic drift.</p>
+      </div>
+
+      <!-- Centrality Leaderboard -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+          <span>Key Structural Terms (Centrality Analysis)</span>
+        </h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="text-slate-400 border-b border-slate-800 uppercase tracking-wider font-semibold">
+              <tr>
+                <th class="py-2.5 px-3">Term</th>
+                <th class="py-2.5 px-3">Frequency</th>
+                <th class="py-2.5 px-3">Degree Centrality</th>
+                <th class="py-2.5 px-3">Betweenness Centrality</th>
+                <th class="py-2.5 px-3">Community</th>
+                <th class="py-2.5 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="topTermsBody" class="divide-y divide-slate-800/60 font-mono text-slate-300">
+              <tr><td colspan="6" class="py-4 text-center text-slate-500">Loading metrics...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SEMANTIC DRIFT -->
+    <div id="viewDrift" class="space-y-6 hidden">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+        <div>
+          <h2 class="text-base font-bold text-white">Semantic Drift Trajectory</h2>
+          <p class="text-xs text-slate-400 mt-1">Track how word embedding centroids shift across temporal slices in semantic space.</p>
+        </div>
+
+        <!-- Term Selector & Metric -->
+        <div class="flex flex-wrap items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-slate-300">Term:</label>
+            <input id="termInput" type="text" value="climate" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white w-36 focus:outline-none focus:border-blue-500" />
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-slate-300">Distance Metric:</label>
+            <select id="metricSelect" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500">
+              <option value="cosine">Cosine Distance</option>
+              <option value="euclidean">Euclidean Distance</option>
+            </select>
+          </div>
+
+          <button onclick="fetchDrift()" class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition shadow-md shadow-blue-500/20">
+            Analyze Drift
+          </button>
+        </div>
+
+        <!-- Quick Select Chips -->
+        <div>
+          <div class="text-xs text-slate-400 font-semibold mb-2">Popular Corpus Terms:</div>
+          <div id="termChips" class="flex flex-wrap gap-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Trajectory Results Container -->
+        <div id="driftResultsArea" class="space-y-4">
+          <div class="p-8 text-center text-slate-500 text-sm">
+            Select a term above to compute its temporal semantic drift series.
+          </div>
+        </div>
+
+        <!-- Raw JSON API Output (Collapsible) -->
+        <details class="bg-slate-950 rounded-xl border border-slate-800 p-3 text-xs">
+          <summary class="font-semibold text-slate-400 cursor-pointer hover:text-white transition">View Raw API Payload</summary>
+          <pre id="driftRawJson" class="mt-3 p-3 bg-slate-900 rounded-lg overflow-x-auto text-[11px] text-blue-300 font-mono"></pre>
+        </details>
+      </div>
+    </div>
+
+    <!-- TAB 3: CORPUS DOCUMENTS -->
+    <div id="viewCorpus" class="space-y-6 hidden">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div>
+          <h2 class="text-base font-bold text-white">Sociological Corpus Ingested</h2>
+          <p class="text-xs text-slate-400 mt-1">Underlying documents stored in SQLite, partitioned by temporal / community slice.</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="text-slate-400 border-b border-slate-800 uppercase tracking-wider font-semibold">
+              <tr>
+                <th class="py-2.5 px-3">ID</th>
+                <th class="py-2.5 px-3">Time Slice</th>
+                <th class="py-2.5 px-3">Author</th>
+                <th class="py-2.5 px-3">Community</th>
+                <th class="py-2.5 px-3">Document Text</th>
+              </tr>
+            </thead>
+            <tbody id="corpusTableBody" class="divide-y divide-slate-800/60 font-mono text-slate-300">
+              <tr><td colspan="5" class="py-4 text-center text-slate-500">Loading documents...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    function setTab(tab) {
-      document.getElementById('tabNet').classList.toggle('hidden', tab !== 'net');
-      document.getElementById('tabDrift').classList.toggle('hidden', tab !== 'drift');
-      document.getElementById('btnNet').className = tab === 'net' ? 'px-4 py-2 rounded-lg font-medium bg-blue-600 text-white' : 'px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white';
-      document.getElementById('btnDrift').className = tab === 'drift' ? 'px-4 py-2 rounded-lg font-medium bg-blue-600 text-white' : 'px-4 py-2 rounded-lg font-medium text-slate-400 hover:text-white';
+    let graphData = null;
+    let hoveredNode = null;
+    const communityColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+    function switchTab(tab) {
+      document.getElementById('viewNet').classList.toggle('hidden', tab !== 'net');
+      document.getElementById('viewDrift').classList.toggle('hidden', tab !== 'drift');
+      document.getElementById('viewCorpus').classList.toggle('hidden', tab !== 'corpus');
+
+      const activeBtnClass = 'px-5 py-2.5 rounded-xl font-semibold text-sm transition bg-blue-600 text-white shadow-lg shadow-blue-500/20 flex items-center gap-2';
+      const inactiveBtnClass = 'px-5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-400 hover:text-white hover:bg-slate-900 flex items-center gap-2';
+
+      document.getElementById('tabBtnNet').className = tab === 'net' ? activeBtnClass : inactiveBtnClass;
+      document.getElementById('tabBtnDrift').className = tab === 'drift' ? activeBtnClass : inactiveBtnClass;
+      document.getElementById('tabBtnCorpus').className = tab === 'corpus' ? activeBtnClass : inactiveBtnClass;
+
+      if (tab === 'net' && graphData) {
+        requestAnimationFrame(() => renderGraph(graphData));
+      }
+    }
+
+    async function loadOverview() {
+      try {
+        const res = await fetch('/api/overview');
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('statDocs').innerText = data.document_count;
+        document.getElementById('statEmbeddings').innerText = data.embedding_count;
+
+        // Populate slices
+        const sliceSelect = document.getElementById('sliceSelect');
+        sliceSelect.innerHTML = '<option value="">All Time Slices</option>';
+        (data.slices || []).forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s;
+          opt.innerText = 'Slice: ' + s;
+          sliceSelect.appendChild(opt);
+        });
+
+        // Populate chips
+        const chipContainer = document.getElementById('termChips');
+        chipContainer.innerHTML = '';
+        const priorityTerms = ['climate', 'policy', 'community', 'labor', 'identity', 'fairness', 'economic'];
+        const allTerms = Array.from(new Set([...priorityTerms, ...(data.terms || [])]));
+        allTerms.forEach(t => {
+          const btn = document.createElement('button');
+          btn.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 hover:bg-blue-600 hover:text-white border border-slate-700 transition';
+          btn.innerText = t;
+          btn.onclick = () => {
+            document.getElementById('termInput').value = t;
+            fetchDrift();
+          };
+          chipContainer.appendChild(btn);
+        });
+
+        // Populate corpus table
+        const corpusBody = document.getElementById('corpusTableBody');
+        corpusBody.innerHTML = '';
+        (data.documents || []).forEach(d => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-800/40 transition';
+          tr.innerHTML = `
+            <td class="py-2.5 px-3 text-blue-400">${d.id}</td>
+            <td class="py-2.5 px-3 text-emerald-400 font-semibold">${d.slice_key || 'none'}</td>
+            <td class="py-2.5 px-3 text-slate-300">${d.author || '-'}</td>
+            <td class="py-2.5 px-3 text-purple-300">${d.community || '-'}</td>
+            <td class="py-2.5 px-3 text-slate-100 font-sans">${d.text}</td>
+          `;
+          corpusBody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error('Error loading overview:', err);
+      }
     }
 
     async function loadNetwork() {
+      const slice = document.getElementById('sliceSelect').value;
+      let url = '/api/network';
+      if (slice) url += '?slice=' + encodeURIComponent(slice);
+
       try {
-        const res = await fetch('/api/network');
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Network fetch failed');
         const data = await res.json();
+        graphData = data;
+
         document.getElementById('statNodes').innerText = data.metrics.num_nodes;
         document.getElementById('statEdges').innerText = data.metrics.num_edges;
         document.getElementById('statDensity').innerText = data.metrics.density.toFixed(3);
         document.getElementById('statModularity').innerText = data.metrics.modularity.toFixed(3);
+
         renderGraph(data);
-      } catch (e) {
-        console.error(e);
+        renderLeaderboard(data.nodes);
+      } catch (err) {
+        console.error('Error loading network:', err);
       }
     }
 
-    async function fetchDrift() {
-      const term = document.getElementById('termInput').value.trim();
-      const out = document.getElementById('driftOutput');
-      out.innerText = 'Fetching drift for ' + term + '...';
-      try {
-        const res = await fetch('/api/drift?term=' + encodeURIComponent(term));
-        if (!res.ok) {
-          out.innerText = 'No centroids found for term: ' + term;
-          return;
-        }
-        const data = await res.json();
-        out.innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
-      } catch (e) {
-        out.innerText = 'Error: ' + e.message;
-      }
+    function renderLeaderboard(nodes) {
+      const body = document.getElementById('topTermsBody');
+      body.innerHTML = '';
+      const sorted = [...nodes].sort((a, b) => b.degree_centrality - a.degree_centrality).slice(0, 8);
+      sorted.forEach(n => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/50 transition';
+        const color = communityColors[n.community % communityColors.length];
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-bold text-white">${n.label}</td>
+          <td class="py-2.5 px-3">${n.frequency}</td>
+          <td class="py-2.5 px-3 text-blue-400">${n.degree_centrality.toFixed(3)}</td>
+          <td class="py-2.5 px-3 text-indigo-400">${n.betweenness_centrality.toFixed(3)}</td>
+          <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-semibold" style="background: ${color}22; color: ${color}; border: 1px solid ${color}44">Group ${n.community}</span></td>
+          <td class="py-2.5 px-3 text-right">
+            <button onclick="inspectTermDrift('${n.label}')" class="px-2 py-1 rounded bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white text-[11px] font-sans font-medium transition">Inspect Drift →</button>
+          </td>
+        `;
+        body.appendChild(tr);
+      });
+    }
+
+    function inspectTermDrift(term) {
+      document.getElementById('termInput').value = term;
+      switchTab('drift');
+      fetchDrift();
     }
 
     function renderGraph(data) {
       const canvas = document.getElementById('graphCanvas');
+      if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
       const w = rect.width;
       const h = rect.height;
+      const count = data.nodes.length;
+      if (count === 0) {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No co-occurrences in this slice', w / 2, h / 2);
+        return;
+      }
 
-      const nodes = data.nodes.map((n, i) => {
-        const angle = (i / data.nodes.length) * 2 * Math.PI;
-        return { ...n, x: w / 2 + Math.cos(angle) * 140, y: h / 2 + Math.sin(angle) * 140, r: 6 + n.frequency * 3 };
+      // Arrange nodes on an ellipse with slight jitter for visual appeal
+      const rx = Math.min(w * 0.38, 300);
+      const ry = Math.min(h * 0.38, 180);
+      const positionedNodes = data.nodes.map((n, i) => {
+        const angle = (i / count) * 2 * Math.PI;
+        const radiusFactor = 0.95 + (i % 3) * 0.08;
+        return {
+          ...n,
+          x: w / 2 + Math.cos(angle) * rx * radiusFactor,
+          y: h / 2 + Math.sin(angle) * ry * radiusFactor,
+          r: 5 + (n.frequency || 1) * 3,
+          color: communityColors[n.community % communityColors.length]
+        };
       });
-      const nodeMap = new Map(nodes.map(n => [n.id, n]));
-      const edges = data.edges.map(e => ({ source: nodeMap.get(e.source), target: nodeMap.get(e.target) })).filter(e => e.source && e.target);
+
+      const nodeMap = new Map(positionedNodes.map(n => [n.id, n]));
+      const edges = data.edges.map(e => ({
+        source: nodeMap.get(e.source),
+        target: nodeMap.get(e.target),
+        weight: e.weight
+      })).filter(e => e.source && e.target);
 
       function draw() {
         ctx.clearRect(0, 0, w, h);
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+
+        // Edges
         edges.forEach(e => {
+          const isConnected = hoveredNode && (hoveredNode.id === e.source.id || hoveredNode.id === e.target.id);
           ctx.beginPath();
           ctx.moveTo(e.source.x, e.source.y);
           ctx.lineTo(e.target.x, e.target.y);
+          ctx.lineWidth = isConnected ? 2.5 : 0.8;
+          ctx.strokeStyle = isConnected ? '#60a5fa' : 'rgba(148, 163, 184, 0.12)';
           ctx.stroke();
         });
-        nodes.forEach(n => {
+
+        // Nodes
+        positionedNodes.forEach(n => {
+          const isHovered = hoveredNode && hoveredNode.id === n.id;
+          const isNeighbor = hoveredNode && edges.some(e => (e.source.id === hoveredNode.id && e.target.id === n.id) || (e.target.id === hoveredNode.id && e.source.id === n.id));
+
           ctx.beginPath();
-          ctx.arc(n.x, n.y, n.r, 0, 2 * Math.PI);
-          ctx.fillStyle = '#3b82f6';
+          ctx.arc(n.x, n.y, isHovered ? n.r + 3 : n.r, 0, 2 * Math.PI);
+          ctx.fillStyle = n.color;
+          ctx.shadowColor = n.color;
+          ctx.shadowBlur = isHovered ? 12 : 0;
           ctx.fill();
-          ctx.fillStyle = '#e2e8f0';
-          ctx.font = '11px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(n.label, n.x, n.y + n.r + 12);
+          ctx.shadowBlur = 0;
+
+          // Node border
+          ctx.strokeStyle = isHovered ? '#ffffff' : 'rgba(255,255,255,0.4)';
+          ctx.lineWidth = isHovered ? 2 : 1;
+          ctx.stroke();
+
+          // Labels
+          if (isHovered || isNeighbor || n.frequency >= 3 || count <= 15) {
+            ctx.fillStyle = isHovered ? '#ffffff' : (isNeighbor ? '#e2e8f0' : '#94a3b8');
+            ctx.font = isHovered ? 'bold 12px sans-serif' : '11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(n.label, n.x, n.y + n.r + 14);
+          }
         });
       }
+
       draw();
+
+      // Mouse interactive hit-testing
+      canvas.onmousemove = (evt) => {
+        const cRect = canvas.getBoundingClientRect();
+        const mx = evt.clientX - cRect.left;
+        const my = evt.clientY - cRect.top;
+        const hit = positionedNodes.find(n => Math.hypot(n.x - mx, n.y - my) <= n.r + 4);
+
+        const tooltip = document.getElementById('graphTooltip');
+        if (hit) {
+          hoveredNode = hit;
+          tooltip.style.left = (hit.x + 15) + 'px';
+          tooltip.style.top = (hit.y - 10) + 'px';
+          tooltip.innerHTML = `
+            <div class="font-bold text-white text-sm">${hit.label}</div>
+            <div class="text-slate-400">Occurrences: <span class="text-blue-400 font-semibold">${hit.frequency}</span></div>
+            <div class="text-slate-400">Degree Centrality: <span class="text-emerald-400 font-semibold">${hit.degree_centrality.toFixed(3)}</span></div>
+            <div class="text-slate-400">Betweenness: <span class="text-indigo-400 font-semibold">${hit.betweenness_centrality.toFixed(3)}</span></div>
+            <div class="text-slate-400">Community: <span class="text-amber-400 font-semibold">Group ${hit.community}</span></div>
+            <div class="text-[10px] text-blue-400 mt-1 italic">Click to inspect drift →</div>
+          `;
+          tooltip.classList.remove('hidden');
+          draw();
+        } else {
+          if (hoveredNode) {
+            hoveredNode = null;
+            tooltip.classList.add('hidden');
+            draw();
+          }
+        }
+      };
+
+      canvas.onmouseleave = () => {
+        hoveredNode = null;
+        document.getElementById('graphTooltip').classList.add('hidden');
+        draw();
+      };
+
+      canvas.onclick = () => {
+        if (hoveredNode) {
+          inspectTermDrift(hoveredNode.label);
+        }
+      };
+    }
+
+    async function fetchDrift() {
+      const term = document.getElementById('termInput').value.trim();
+      const metric = document.getElementById('metricSelect').value;
+      const area = document.getElementById('driftResultsArea');
+      const raw = document.getElementById('driftRawJson');
+
+      if (!term) return;
+      area.innerHTML = `
+        <div class="p-6 text-center text-slate-400 flex items-center justify-center gap-2">
+          <svg class="animate-spin h-5 w-5 text-blue-500" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+          <span>Computing drift trajectory for '${term}' (${metric})...</span>
+        </div>
+      `;
+
+      try {
+        const res = await fetch(`/api/drift?term=${encodeURIComponent(term)}&metric=${encodeURIComponent(metric)}`);
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          area.innerHTML = `
+            <div class="p-6 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs">
+              <div class="font-bold text-sm">No Centroids Found</div>
+              <p class="mt-1">${err.detail || `The term '${term}' has not been embedded in any slice centroids yet.`}</p>
+            </div>
+          `;
+          raw.innerText = JSON.stringify(err, null, 2);
+          return;
+        }
+
+        const data = await res.json();
+        raw.innerText = JSON.stringify(data, null, 2);
+
+        if (!data.series || data.series.length === 0) {
+          area.innerHTML = `
+            <div class="p-6 rounded-xl border border-blue-500/30 bg-blue-500/10 text-blue-300 text-xs">
+              <div class="font-bold text-sm">Single Slice Term: ${data.term}</div>
+              <p class="mt-1">This term is only present in 1 time slice (${data.slices.join(', ')}). Semantic drift requires at least 2 distinct slices.</p>
+            </div>
+          `;
+          return;
+        }
+
+        const totalDrift = data.series.reduce((sum, s) => sum + (s.drift || 0), 0);
+        const avgDrift = totalDrift / data.series.length;
+
+        let rowsHtml = '';
+        data.series.forEach((s, idx) => {
+          const driftVal = s.drift || 0;
+          const simVal = s.similarity !== undefined ? s.similarity : (1 - driftVal);
+          const barPct = Math.min(Math.max((driftVal / 2) * 100, 5), 100);
+          rowsHtml += `
+            <tr class="hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-emerald-400">${s.from_slice}</td>
+              <td class="py-3 px-4 text-slate-500">→</td>
+              <td class="py-3 px-4 font-semibold text-blue-400">${s.to_slice}</td>
+              <td class="py-3 px-4 font-mono font-bold text-white">${driftVal.toFixed(4)}</td>
+              <td class="py-3 px-4 font-mono text-slate-400">${simVal.toFixed(4)}</td>
+              <td class="py-3 px-4">
+                <div class="w-32 bg-slate-800 rounded-full h-2 overflow-hidden">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: ${barPct}%"></div>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+
+        area.innerHTML = `
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="p-4 rounded-xl border border-slate-800 bg-slate-950">
+              <div class="text-xs text-slate-400">Slices Traversed</div>
+              <div class="text-xl font-bold text-emerald-400 mt-1">${data.num_slices} (${data.slices[0]} → ${data.slices[data.slices.length - 1]})</div>
+            </div>
+            <div class="p-4 rounded-xl border border-slate-800 bg-slate-950">
+              <div class="text-xs text-slate-400">Total Drift Magnitude</div>
+              <div class="text-xl font-bold text-blue-400 mt-1">${totalDrift.toFixed(4)}</div>
+            </div>
+            <div class="p-4 rounded-xl border border-slate-800 bg-slate-950">
+              <div class="text-xs text-slate-400">Avg Step Drift</div>
+              <div class="text-xl font-bold text-indigo-400 mt-1">${avgDrift.toFixed(4)}</div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950">
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-400 border-b border-slate-800 uppercase tracking-wider font-semibold bg-slate-900/50">
+                <tr>
+                  <th class="py-3 px-4">From Slice</th>
+                  <th class="py-3 px-4"></th>
+                  <th class="py-3 px-4">To Slice</th>
+                  <th class="py-3 px-4">Drift Distance</th>
+                  <th class="py-3 px-4">Similarity</th>
+                  <th class="py-3 px-4">Drift Intensity</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60 font-mono">
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (err) {
+        area.innerHTML = `<div class="p-4 text-red-400 text-xs">Error computing drift: ${err.message}</div>`;
+      }
     }
 
     window.addEventListener('load', () => {
+      loadOverview();
       loadNetwork();
       fetchDrift();
+    });
+
+    window.addEventListener('resize', () => {
+      if (graphData) renderGraph(graphData);
     });
   </script>
 </body>
 </html>
-

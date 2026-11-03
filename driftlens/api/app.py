@@ -9,6 +9,8 @@ Endpoints
 
 from __future__ import annotations
 
+import os
+
 import logging
 from pathlib import Path
 from typing import Any
@@ -56,7 +58,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def _get_db():
         from driftlens.db.session import Database
 
-        db = Database(settings.db_path)
+        active_db = Path(os.environ.get("DRIFTLENS_DB_PATH", str(settings.db_path)))
+        db = Database(active_db)
         db.connect()
         # Ensure schema exists (idempotent)
         try:
@@ -82,6 +85,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health() -> dict[str, Any]:
         return {"status": "ok", "version": "0.1.0"}
 
+    @app.get("/api/overview", tags=["overview"])
+    def get_overview() -> dict[str, Any]:
+        """Corpus overview metadata for dashboard."""
+        db = _get_db()
+        try:
+            with db.session() as conn:
+                docs = db.list_documents(conn=conn)
+                centroids = db.list_centroids(conn=conn)
+                terms = sorted(list(set(c.term for c in centroids)))
+                slices = sorted(list(set(d.slice_key for d in docs if d.slice_key)))
+                return {
+                    "document_count": len(docs),
+                    "embedding_count": db.count_embeddings(conn=conn),
+                    "centroid_count": len(centroids),
+                    "slices": slices,
+                    "terms": terms,
+                    "documents": [
+                        {
+                            "id": d.id,
+                            "text": d.text,
+                            "slice_key": d.slice_key,
+                            "author": (d.meta or {}).get("author") if d.meta else None,
+                            "community": (d.meta or {}).get("community") if d.meta else None,
+                        }
+                        for d in docs
+                    ],
+                }
+        finally:
+            db.close()
+
     # ------------------------------------------------------------------
     # Drift
     # ------------------------------------------------------------------
@@ -105,7 +138,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         db = _get_db()
         try:
             with db.session() as conn:
-                centroids_raw = db.list_centroids(conn, term=term)
+                centroids_raw = db.list_centroids(conn=conn, term=term)
                 if not centroids_raw:
                     raise HTTPException(status_code=404, detail=f"No centroids found for term '{term}'")
                 # Build slice -> vector map
@@ -132,8 +165,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             logger.exception("drift endpoint error")
             raise HTTPException(status_code=500, detail=str(exc)) from exc
         finally:
-            # Don't close shared connection aggressively; just leave it.
-            pass
+            db.close()
 
     # ------------------------------------------------------------------
     # Network
@@ -156,14 +188,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             with db.session() as conn:
                 if slice is not None:
-                    docs = db.list_documents(conn, slice_key=slice)
+                    docs = db.list_documents(conn=conn, slice_key=slice)
                     if not docs:
                         # Check if slice exists at all (maybe no docs yet)
                         # Return empty graph rather than 404 to keep API lenient
                         # but surface warning.
                         pass
                 else:
-                    docs = db.list_documents(conn)
+                    docs = db.list_documents(conn=conn)
                 if not docs:
                     return {
                         "slice": slice,
@@ -192,6 +224,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except Exception as exc:  # pragma: no cover
             logger.exception("network endpoint error")
             raise HTTPException(status_code=500, detail=str(exc)) from exc
+        finally:
+            db.close()
 
     # ------------------------------------------------------------------
     # Error handling — ensure JSON errors

@@ -96,6 +96,8 @@ def app(ctx: click.Context, db_path: str | None, verbose: bool) -> None:
     settings = Settings()  # type: ignore[call-arg]
     if db_path:
         settings.db_path = Path(db_path)
+        import os
+        os.environ["DRIFTLENS_DB_PATH"] = str(Path(db_path).resolve())
     ctx.ensure_object(dict)
     ctx.obj["settings"] = settings
 
@@ -349,6 +351,8 @@ def serve(ctx: click.Context, port: int, host: str, reload: bool) -> None:
     import uvicorn  # type: ignore[import-not-found]
 
     settings: Settings = ctx.obj["settings"]
+    import os
+    os.environ["DRIFTLENS_DB_PATH"] = str(Path(settings.db_path).resolve())
     _setup_logging(settings.log_level)
     click.echo(f"Starting DriftLens API on http://{host}:{port} (db={settings.db_path})")
     uvicorn.run("driftlens.api.app:app", host=host, port=port, reload=reload, log_level=settings.log_level.lower())
