@@ -7,29 +7,292 @@
     <title>DriftLens — Semantic Drift & Network Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Dark scrollbars & fallback styling */
+        :root {
+            color-scheme: light;
+            --page: #f5f7fb;
+            --surface: #ffffff;
+            --surface-muted: #f8fafc;
+            --line: #e4e9f1;
+            --ink: #172033;
+            --muted: #64748b;
+            --brand: #3559c7;
+        }
+
+        * {
+            scrollbar-color: #cbd5e1 transparent;
+        }
+
+        body {
+            background:
+                radial-gradient(ellipse at 12% 0%, rgba(219, 231, 255, 0.62), transparent 34rem),
+                var(--page) !important;
+            color: var(--ink) !important;
+            padding: 28px !important;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body > div.max-w-6xl {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        header.bg-slate-900,
+        .bg-slate-900,
+        [class~="bg-slate-900/60"],
+        .bg-slate-950,
+        [class~="bg-slate-900/50"],
+        [class~="bg-slate-800/50"],
+        [class~="bg-slate-800/40"] {
+            background-color: var(--surface) !important;
+        }
+
+        .bg-slate-800 {
+            background-color: #f1f4f9 !important;
+        }
+
+        .border-slate-800,
+        .border-slate-700,
+        [class~="divide-slate-800/60"] {
+            border-color: var(--line) !important;
+        }
+
+        .text-white,
+        .text-slate-100,
+        .text-slate-200,
+        .text-slate-300 {
+            color: var(--ink) !important;
+        }
+
+        .text-slate-400,
+        .text-slate-500 {
+            color: var(--muted) !important;
+        }
+
+        .text-blue-400,
+        .text-blue-300,
+        .text-cyan-400 {
+            color: #3158bd !important;
+        }
+
+        .text-indigo-400,
+        .text-violet-400 {
+            color: #6452a2 !important;
+        }
+
+        .text-emerald-400 {
+            color: #18765f !important;
+        }
+
+        .text-amber-400,
+        .text-amber-300 {
+            color: #95600a !important;
+        }
+
+        header {
+            border-radius: 18px !important;
+            box-shadow: 0 8px 26px rgba(31, 48, 82, 0.06) !important;
+        }
+
+        header > div:first-child > div:first-child {
+            background: linear-gradient(145deg, #426bd4, #6658bd) !important;
+            box-shadow: 0 6px 15px rgba(66, 107, 212, 0.2) !important;
+        }
+
+        header h1 {
+            letter-spacing: -0.035em;
+        }
+
+        body > div > header + .grid > div {
+            background: var(--surface) !important;
+            border-color: var(--line) !important;
+            border-radius: 14px !important;
+            box-shadow: 0 3px 12px rgba(31, 48, 82, 0.035);
+            padding: 18px !important;
+        }
+
+        body > div > header + .grid > div > div:first-child {
+            font-size: 10px;
+            letter-spacing: 0.08em;
+        }
+
+        body > div > header + .grid > div > div:last-child {
+            font-variant-numeric: tabular-nums;
+            font-size: 24px;
+        }
+
+        body > div > .border-b.pb-3 {
+            display: flex;
+            width: fit-content;
+            max-width: 100%;
+            gap: 4px !important;
+            padding: 5px !important;
+            border: 1px solid var(--line) !important;
+            border-radius: 13px;
+            background: #edf1f7;
+        }
+
+        body > div > .border-b.pb-3 button {
+            border-radius: 9px !important;
+            box-shadow: none !important;
+            padding: 10px 15px !important;
+        }
+
+        button,
+        a,
+        select,
+        input {
+            transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+        }
+
+        button:focus-visible,
+        a:focus-visible,
+        select:focus-visible,
+        input:focus-visible,
+        summary:focus-visible {
+            outline: 3px solid rgba(53, 89, 199, 0.25);
+            outline-offset: 2px;
+        }
+
+        .bg-blue-600 {
+            background-color: var(--brand) !important;
+        }
+
+        header .bg-gradient-to-tr,
+        .bg-blue-600.text-white {
+            color: #ffffff !important;
+        }
+
+        .hover\:text-white:hover {
+            color: #ffffff !important;
+        }
+
+        .hover\:bg-blue-500:hover {
+            background-color: #2949a8 !important;
+        }
+
+        .hover\:bg-slate-700:hover,
+        .hover\:bg-slate-800\/50:hover,
+        .hover\:bg-slate-800\/40:hover {
+            background-color: #eef2f8 !important;
+        }
+
+        .canvas-container {
+            height: 500px;
+            background-color: #f8fafd !important;
+            background-image: linear-gradient(rgba(99, 117, 153, 0.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 117, 153, 0.055) 1px, transparent 1px);
+            background-size: 28px 28px;
+            border-color: var(--line) !important;
+            border-radius: 14px !important;
+        }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        thead {
+            background-color: #f7f9fc;
+        }
+
+        th {
+            white-space: nowrap;
+            font-size: 10px;
+            letter-spacing: 0.065em;
+        }
+
+        th,
+        td {
+            border-color: var(--line) !important;
+        }
+
+        input,
+        select,
+        summary,
+        details {
+            border-color: var(--line) !important;
+        }
+
+        input,
+        select,
+        pre {
+            background-color: #f8fafd !important;
+            color: var(--ink) !important;
+        }
+
+        .canvas-container,
+        [id="driftResultsArea"] > div,
+        details,
+        .overflow-x-auto.rounded-xl {
+            box-shadow: 0 2px 8px rgba(31, 48, 82, 0.025);
+        }
+
+        /* Scrollbar and canvas sizing */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #0f172a;
+            background: transparent;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #334155;
+            background: #cbd5e1;
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
+            background: #94a3b8;
+        }
+
+        @media (min-width: 640px) {
+            body > div > header + .grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1100px) {
+            body > div > header + .grid {
+                grid-template-columns: repeat(6, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 16px !important;
+            }
+
+            body > div > .border-b.pb-3 {
+                width: 100%;
+            }
+
+            body > div > .border-b.pb-3 button {
+                justify-content: center;
+                flex: 1;
+                padding: 9px 7px !important;
+                font-size: 12px;
+            }
+
+            body > div > .border-b.pb-3 button svg {
+                display: none;
+            }
+
+            .canvas-container {
+                height: 360px;
+            }
         }
 
         .canvas-container {
             position: relative;
             width: 100%;
             height: 500px;
+        }
+
+        @media (max-width: 640px) {
+            .canvas-container {
+                height: 360px;
+            }
         }
     </style>
 </head>
@@ -460,7 +723,7 @@
                     ctx.moveTo(e.source.x, e.source.y);
                     ctx.lineTo(e.target.x, e.target.y);
                     ctx.lineWidth = isConnected ? 2.5 : 0.8;
-                    ctx.strokeStyle = isConnected ? '#60a5fa' : 'rgba(148, 163, 184, 0.12)';
+                    ctx.strokeStyle = isConnected ? '#426bd4' : 'rgba(100, 116, 139, 0.24)';
                     ctx.stroke();
                 });
 
@@ -478,13 +741,13 @@
                     ctx.shadowBlur = 0;
 
                     // Node border
-                    ctx.strokeStyle = isHovered ? '#ffffff' : 'rgba(255,255,255,0.4)';
+                    ctx.strokeStyle = isHovered ? '#ffffff' : 'rgba(255,255,255,0.75)';
                     ctx.lineWidth = isHovered ? 2 : 1;
                     ctx.stroke();
 
                     // Labels
                     if (isHovered || isNeighbor || n.frequency >= 3 || count <= 15) {
-                        ctx.fillStyle = isHovered ? '#ffffff' : (isNeighbor ? '#e2e8f0' : '#94a3b8');
+                        ctx.fillStyle = isHovered ? '#172033' : (isNeighbor ? '#334155' : '#64748b');
                         ctx.font = isHovered ? 'bold 12px sans-serif' : '11px sans-serif';
                         ctx.textAlign = 'center';
                         ctx.fillText(n.label, n.x, n.y + n.r + 14);
