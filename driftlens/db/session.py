@@ -152,6 +152,35 @@ def _row_to_centroid(row: sqlite3.Row) -> TermCentroid:
 # ---------------------------------------------------------------------------
 
 
+def _upsert_document_row(
+    conn: sqlite3.Connection,
+    doc_id: str,
+    text: str,
+    title: str | None,
+    slice_key: str | None,
+    meta_json: str | None,
+) -> None:
+    previous = conn.execute(
+        "SELECT text, slice_key FROM documents WHERE id = ?", (doc_id,)
+    ).fetchone()
+    conn.execute(
+        "INSERT INTO documents (id, text, title, slice_key, meta_json) "
+        "VALUES (?, ?, ?, ?, ?) "
+        "ON CONFLICT(id) DO UPDATE SET "
+        "text = excluded.text, title = excluded.title, "
+        "slice_key = excluded.slice_key, meta_json = excluded.meta_json "
+        "WHERE documents.text IS NOT excluded.text "
+        "OR documents.title IS NOT excluded.title "
+        "OR documents.slice_key IS NOT excluded.slice_key "
+        "OR documents.meta_json IS NOT excluded.meta_json",
+        (doc_id, text, title, slice_key, meta_json),
+    )
+    if previous is None or previous["text"] != text:
+        conn.execute("DELETE FROM embeddings WHERE doc_id = ?", (doc_id,))
+    if previous is None or previous["text"] != text or previous["slice_key"] != slice_key:
+        conn.execute("DELETE FROM term_centroids")
+
+
 class Database:
     """Thread-safe SQLite database with WAL mode.
 
@@ -309,7 +338,7 @@ class Database:
         conn: sqlite3.Connection | None = None,
         document: Document | None = None,
     ) -> str:
-        """Insert or replace a single document row.
+        """Insert or update a single document row.
 
         Supports two calling conventions for backwards compatibility:
 
@@ -340,11 +369,7 @@ class Database:
         meta_json = json.dumps(meta) if meta is not None else None
 
         def _exec(c: sqlite3.Connection) -> None:
-            c.execute(
-                "INSERT OR REPLACE INTO documents (id, text, title, slice_key, meta_json) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (doc_id, text, title, slice_key, meta_json),
-            )
+            _upsert_document_row(c, doc_id, text, title, slice_key, meta_json)
 
         if conn is not None:
             with self._lock:
@@ -400,11 +425,7 @@ class Database:
                         meta_json = meta
                     else:
                         meta_json = None
-                c.execute(
-                    "INSERT OR REPLACE INTO documents (id, text, title, slice_key, meta_json) "
-                    "VALUES (?, ?, ?, ?, ?)",
-                    (doc_id, text, title, slice_key, meta_json),
-                )
+                _upsert_document_row(c, doc_id, text, title, slice_key, meta_json)
                 ids.append(doc_id)
 
         if conn is not None:
@@ -881,6 +902,21 @@ class Database:
             if not c.in_transaction:
                 c.commit()
             return cur.rowcount > 0
+
+        if conn is not None:
+            with self._lock:
+                return _exec(conn)
+        with self._lock:
+            with self.connect() as c:
+                return _exec(c)
+
+    def clear_centroids(self, *, conn: sqlite3.Connection | None = None) -> int:
+        """Delete all cached term centroids."""
+        def _exec(c: sqlite3.Connection) -> int:
+            cur = c.execute("DELETE FROM term_centroids")
+            if not c.in_transaction:
+                c.commit()
+            return cur.rowcount
 
         if conn is not None:
             with self._lock:
