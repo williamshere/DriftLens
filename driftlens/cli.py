@@ -203,6 +203,7 @@ def process_embeddings(
 
     # Store
     with db.session() as conn:
+        db.clear_centroids(conn=conn)
         for doc, vec in zip(docs, vectors):
             emb = Embedding(doc_id=doc.id, vector=np.asarray(vec, dtype=np.float32), dim=int(vec.size), model=model_name)
             db.upsert_embedding(embedding=emb, conn=conn)
